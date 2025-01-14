@@ -19,12 +19,18 @@ public class PlayerMovement : MonoBehaviour
     public float groundCheckLength;
 
     //dash physics
-    private bool dash;
-    private bool hasDashed;
     public float dashSpeed;
-    private float currentDashSpeed;
+    public float desiredDashSpeed;
     public float dashtimer;
     private float resetdashtimer;
+    public bool canDash = false;
+    public bool isDashing;
+
+    //damage physics
+    public int damage;
+
+    public CheckForDamage leftBox;
+    public CheckForDamage rightBox;
 
     // Start is called before the first frame update
     void Start()
@@ -40,40 +46,54 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         Crouch();
         HandleDash();
+        HandleAttack();
         grounded = CheckIfOnGround();
     }
 
-    //TODO
-    //Make it so that dash is a burst
-    //make a dash cooldown
-    void HandleDash() 
+    void HandleAttack()
     {
-        if (desiredMovespeed > 0 && Input.GetKey(KeyCode.LeftShift) && !dash && !hasDashed)
+        if(Input.GetAxis("Horizontal") > 0 && Input.GetKeyDown(KeyCode.Mouse0))
         {
-            currentDashSpeed = dashSpeed;
-            dash = true;
-            hasDashed = true;
-        }
-        if (desiredMovespeed < 0 && Input.GetKey(KeyCode.LeftShift) && !dash && !hasDashed)
-        {
-            currentDashSpeed = -dashSpeed;
-            dash = true;
-            hasDashed = true;
-        }
-
-        if (dash)
-        {
-            dashtimer -= Time.deltaTime;   
-
-            if (dashtimer < 0)
+            if (rightBox.canDamage)
             {
-                dash = false;
-                dashtimer = resetdashtimer;
+                rightBox.health.healthPoints -= damage;
             }
         }
-        else
+
+        if (Input.GetAxis("Horizontal") < 0 && Input.GetKeyDown(KeyCode.Mouse0))
         {
-            hasDashed = !CheckIfOnGround();
+            if (leftBox.canDamage)
+            {
+                leftBox.health.healthPoints -= damage;
+            }
+        }
+    }
+
+    //This void handles the dash ability
+    void HandleDash() 
+    {
+        //Checks whether we want to go right or left
+        if (Input.GetAxis("Horizontal") > 0 && canDash && Input.GetKey(KeyCode.LeftShift))
+        {
+            isDashing = true;
+            desiredDashSpeed = dashSpeed;
+        }
+        if (Input.GetAxis("Horizontal") < 0 && canDash && Input.GetKey(KeyCode.LeftShift))
+        {
+            isDashing = true;
+            desiredDashSpeed = -dashSpeed;
+        }
+
+        //if we dash we subtract a number from the timer each frame.
+        if (isDashing)
+        {
+            canDash = false;
+            dashtimer -= Time.deltaTime;
+            if(dashtimer < 0)
+            {
+                isDashing = false;
+                dashtimer = resetdashtimer;
+            }
         }
     }
 
@@ -82,7 +102,7 @@ public class PlayerMovement : MonoBehaviour
     {
         //movement code ---------------------------------------------------------
         desiredMovespeed = Input.GetAxis("Horizontal") * movespeed;
-        rbody.velocity = new Vector2(dash ? currentDashSpeed : desiredMovespeed, dash ? 0 : rbody.velocity.y);
+        rbody.velocity = new Vector2(isDashing ? desiredDashSpeed : desiredMovespeed, isDashing ? 0 : rbody.velocity.y);
 
         if (Input.GetKeyDown(KeyCode.Space) && grounded == true)
         {
@@ -123,8 +143,15 @@ public class PlayerMovement : MonoBehaviour
             return true;
         }
 
-        return false;
-        
+        return false;    
+    }
+
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (other.collider.CompareTag("Ground"))
+        {
+            canDash = true;
+        }
     }
 
 }
