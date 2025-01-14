@@ -4,13 +4,16 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    //scale physics
+    Vector2 originalScale;
+
     //movement physics 
     public float jumpforce;
     public float movespeed;
     Rigidbody2D rbody;
     bool grounded;
     private float desiredMovespeed;
-   
+
     //crouch physics
     public float crouchHeight;
     private float resetHeight;
@@ -29,8 +32,7 @@ public class PlayerMovement : MonoBehaviour
     //damage physics
     public int damage;
 
-    public CheckForDamage leftBox;
-    public CheckForDamage rightBox;
+    public CheckForDamage attackHitBox;
 
     // Start is called before the first frame update
     void Start()
@@ -38,6 +40,8 @@ public class PlayerMovement : MonoBehaviour
         rbody = GetComponent<Rigidbody2D>();
         resetHeight = transform.localScale.y;
         resetdashtimer = dashtimer;
+
+        originalScale = transform.localScale;
     }
 
     // Update is called once per frame
@@ -46,28 +50,36 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         Crouch();
         HandleDash();
+        FlipPlayer();
         HandleAttack();
         grounded = CheckIfOnGround();
     }
 
+    void FlipPlayer()
+    {
+        if (Input.GetKey(KeyCode.A))
+        {
+            transform.localScale = new Vector2(-originalScale.x, transform.localScale.y);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            transform.localScale = new Vector2(originalScale.x, transform.localScale.y);
+        }
+
+    }
+
     void HandleAttack()
     {
-        if(Input.GetAxis("Horizontal") > 0 && Input.GetKeyDown(KeyCode.Mouse0))
+        if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            if (rightBox.canDamage)
+            if (attackHitBox.canDamage)
             {
-                rightBox.health.healthPoints -= damage;
+                attackHitBox.health.healthPoints -= damage;
             }
         }
 
-        if (Input.GetAxis("Horizontal") < 0 && Input.GetKeyDown(KeyCode.Mouse0))
-        {
-            if (leftBox.canDamage)
-            {
-                leftBox.health.healthPoints -= damage;
-            }
-        }
     }
+    
 
     //This void handles the dash ability
     void HandleDash() 
